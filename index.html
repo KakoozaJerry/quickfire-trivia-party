@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quickfire Trivia Party</title>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<style>
+  body {
+    margin: 0;
+    padding: 20px;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+    color: #ffffff;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-sizing: border-box;
+  }
+  .card {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 24px;
+    width: 100%;
+    max-width: 640px;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    box-sizing: border-box;
+  }
+  #status {
+    font-size: 0.85rem;
+    color: #a0aec0;
+    margin-top: 0;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+  .screen {
+    display: none;
+  }
+  .screen.on {
+    display: block;
+  }
+  h1 {
+    text-align: center;
+    margin-top: 0;
+    font-size: 2rem;
+    margin-bottom: 20px;
+    background: linear-gradient(90deg, #ff758c, #ff7eb3);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .rules-box {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    padding: 14px;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    margin-bottom: 20px;
+    color: #e2e8f0;
+  }
+  .rules-box h3 {
+    margin: 0 0 8px 0;
+    font-size: 1rem;
+    color: #ff7eb3;
+  }
+  .rules-box ul {
+    margin: 0;
+    padding-left: 20px;
+  }
+  .section-group {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .section-group h3 {
+    margin-top: 0;
+    margin-bottom: 12px;
+    font-size: 1.1rem;
+  }
+  input[type="text"] {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 12px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    color: #fff;
+    font-size: 1rem;
+    box-sizing: border-box;
+  }
+  input[type="text"]:focus {
+    outline: none;
+    border-color: #ff7eb3;
+  }
+  .btn, .btn2 {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+  }
+  .btn {
+    background: linear-gradient(90deg, #ff758c, #ff7eb3);
+    color: white;
+  }
+  .btn:hover {
+    opacity: 0.9;
+  }
+  .btn:active {
+    transform: scale(0.98);
+  }
+  .btn2 {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  .btn2:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+  .opt {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 14px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: left;
+    color: white;
+    font-size: 1rem;
+    width: 100%;
+    transition: background 0.2s;
+  }
+  .opt:hover {
+    background: rgba(255, 255, 255, 0.15);
+  }
+  #timerBar {
+    width: 100%;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  #timerBarFill {
+    height: 100%;
+    width: 100%;
+    background: #ff7eb3;
+    transition: width 0.1s linear;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+<p id="status">Status: not connected</p>
+<div id="home" class="screen on">
+  <h1>Quickfire Trivia Party</h1>
+  <div class="rules-box">
+    <h3>How to Play</h3>
+    <ul>
+      <li>2-8 players in real-time</li>
+      <li>Create or join a room using a unique code</li>
+      <li>5 rapid rounds of trivia</li>
+      <li>12 seconds per question</li>
+      <li>Scoring: 1,000 pts + up to 500 speed bonus</li>
+    </ul>
+  </div>
+  <div class="section-group">
+    <h3>Create Room</h3>
+    <input type="text" id="hostName" placeholder="Your name">
+    <button id="createBtn" class="btn">Create Room</button>
+  </div>
+  <div class="section-group">
+    <h3>Join Room</h3>
+    <input type="text" id="joinName" placeholder="Your name">
+    <input type="text" id="joinCode" placeholder="Room code">
+    <button id="joinBtn" class="btn2">Join Room</button>
+  </div>
+  <p id="homeStatus"></p>
+</div>
+<div id="lobby" class="screen">
+  <h2>Lobby</h2>
+  <p style="font-size: 1.2rem; font-weight: bold;">Room code: <span id="roomCode"></span></p>
+  <button id="copyBtn" class="btn2">Copy invite link</button>
+  <h3>Players</h3>
+  <ul id="playerList"></ul>
+  <button id="startBtn" class="btn disabled">Start Game</button>
+  <button id="leaveBtn" class="btn2">Leave room</button>
+  <p id="lobbyStatus"></p>
+</div>
+<div id="game" class="screen">
+  <h2 id="roundLabel">Round 1 of 5</h2>
+  <div id="timerBar"><div id="timerBarFill"></div></div>
+  <p id="timerText"></p>
+  <h3 id="qText"></h3>
+  <div id="opts"></div>
+  <div id="feedback"></div>
+  <div id="miniBoard"></div>
+</div>
+<div id="final" class="screen">
+  <h2>Final Results</h2>
+  <h3 id="winner"></h3>
+  <ol id="finalBoard"></ol>
+  <button id="againBtn" class="btn">Play Again</button>
+</div>
+</div>
+<script>
+const Q = [
+  {q:"Which planet is closest to the Sun?", o:["Mercury", "Venus", "Earth", "Mars"], a:0},
+  {q:"What is the capital of France?", o:["London", "Paris", "Berlin", "Madrid"], a:1},
+  {q:"What is the largest ocean?", o:["Atlantic", "Indian", "Pacific", "Arctic"], a:2},
+  {q:"Who painted the Mona Lisa?", o:["Picasso", "Van Gogh", "Rembrandt", "Da Vinci"], a:3},
+  {q:"What is the chemical symbol for gold?", o:["Au", "Ag", "Pb", "Fe"], a:0},
+  {q:"How many continents are there?", o:["6", "7", "8", "5"], a:1},
+  {q:"What is the fastest land animal?", o:["Lion", "Horse", "Cheetah", "Leopard"], a:2},
+  {q:"Which gas do plants absorb?", o:["Oxygen", "Nitrogen", "Hydrogen", "Carbon Dioxide"], a:3},
+  {q:"What is the smallest prime number?", o:["2", "3", "5", "7"], a:0},
+  {q:"In which country is the Taj Mahal?", o:["Egypt", "India", "China", "Italy"], a:1},
+  {q:"What is the freezing point of water in Celsius?", o:["32", "100", "0", "-1"], a:2},
+  {q:"Who wrote Romeo and Juliet?", o:["Dickens", "Austen", "Hemingway", "Shakespeare"], a:3},
+  {q:"What is the main ingredient in guacamole?", o:["Avocado", "Tomato", "Lime", "Onion"], a:0},
+  {q:"How many sides does a triangle have?", o:["4", "3", "5", "6"], a:1},
+  {q:"What is the tallest mountain?", o:["K2", "Kangchenjunga", "Mount Everest", "Lhotse"], a:2},
+  {q:"Which metal is liquid at room temp?", o:["Iron", "Copper", "Zinc", "Mercury"], a:3},
+  {q:"What year did WWII end?", o:["1945", "1943", "1950", "1939"], a:0},
+  {q:"Which US state is the Sunshine State?", o:["California", "Florida", "Texas", "Hawaii"], a:1},
+  {q:"What is the hardest natural substance?", o:["Gold", "Iron", "Diamond", "Platinum"], a:2},
+  {q:"How many bones are in the adult human body?", o:["208", "210", "212", "206"], a:3}
+];
+let peer=null, isHost=false, code='', myName='', players=[], conns=[], joinConn=null, sel=[], round=0, answers={}, timer=null, qStart=0, answered=false, curQ=null;
+const $=id=>document.getElementById(id);
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('on'));
+  $(id).classList.add('on');
+}
+function setStatus(t) {
+  $('status').innerText = 'Status: ' + t;
+}
+function shuffle(a) {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+function makeCode() {
+  let c = '';
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  for (let i = 0; i < 4; i++) c += chars[Math.floor(Math.random() * chars.length)];
+  return c;
+}
+function renderLobby() {
+  $('playerList').innerHTML = players.map(p => `<li>${p.name} - Score: ${p.score}</li>`).join('');
+  $('startBtn').disabled = !(isHost && players.length >= 2);
+}
+function broadcast(m) {
+  conns.forEach(c => { if(c.open) c.send(m); });
+}
+function createRoom() {
+  myName = $('hostName').value.trim();
+  if(!myName) {
+    $('homeStatus').innerText = 'Enter your name';
+    return;
+  }
+  isHost = true;
+  code = makeCode();
+  players = [{id:'host', name:myName, score:0}];
+  peer = new Peer('qtp-'+code.toLowerCase());
+  peer.on('open', id => {
+    show('lobby');
+    $('roomCode').innerText = code;
+    setStatus('Connected as host');
+  });
+  peer.on('connection', c => {
+    conns.push(c);
+    c.on('data', d => handleHost(d, c));
+    c.on('close', () => {
+      conns = conns.filter(x => x !== c);
+      players = players.filter(p => p.id !== c.peer);
+      broadcast({t:'lobby', players});
+      renderLobby();
+    });
+  });
+  peer.on('error', err => {
+    $('homeStatus').innerText = 'Connection error: ' + err.type;
+  });
+}
+function joinRoom() {
+  myName = $('joinName').value.trim();
+  code = $('joinCode').value.trim().toUpperCase();
+  if(!myName || !code) {
+    $('homeStatus').innerText = 'Enter your name and room code';
+    return;
+  }
+  isHost = false;
+  peer = new Peer();
+  let connected = false;
+  peer.on('open', id => {
+    joinConn = peer.connect('qtp-'+code.toLowerCase());
+    let timeout = setTimeout(() => {
+      if(!connected) {
+        $('homeStatus').innerText = 'Room not found. Check the code and try again.';
+        peer.destroy();
+      }
+    }, 8000);
+    joinConn.on('open', () => {
+      connected = true;
+      clearTimeout(timeout);
+      joinConn.send({t:'join', name:myName});
+      setStatus('Connected to room ' + code);
+    });
+    joinConn.on('data', d => handlePlayer(d));
+    joinConn.on('close', () => {
+      $('status').innerText = 'Host disconnected';
+      show('home');
+    });
+  });
+  peer.on('error', err => {
+    $('homeStatus').innerText = 'Connection error: ' + err.type;
+  });
+}
+function handleHost(d, c) {
+  if(d.t === 'join') {
+    if(players.length >= 8) {
+      c.send({t:'full'});
+      return;
+    }
+    if(round > 0) {
+      c.send({t:'started'});
+      return;
+    }
+    players.push({id:c.peer, name:d.name, score:0});
+    broadcast({t:'lobby', players});
+    renderLobby();
+  } else if(d.t === 'ans') {
+    answers[c.peer] = {choice: d.choice, elapsed: d.elapsed};
+  } else if(d.t === 'leave') {
+    players = players.filter(p => p.id !== c.peer);
+    conns = conns.filter(x => x !== c);
+    broadcast({t:'lobby', players});
+    renderLobby();
+  } else if(d.t === 'again') {
+    doAgain();
+  }
+}
+function handlePlayer(d) {
+  if(d.t === 'lobby') {
+    players = d.players;
+    renderLobby();
+    show('lobby');
+  } else if(d.t === 'q') {
+    showQuestion({q: d.q, o: d.o, a: -1}, d.round);
+  } else if(d.t === 'reveal') {
+    showReveal(d);
+  } else if(d.t === 'board') {
+    showBoard(d.players);
+  } else if(d.t === 'final') {
+    showFinal(d.players);
+  } else if(d.t === 'again') {
+    players = d.players;
+    players.forEach(p => p.score = 0);
+    renderLobby();
+    show('lobby');
+  } else if(d.t === 'full') {
+    $('homeStatus').innerText = 'Room is full (8 players).';
+  } else if(d.t === 'started') {
+    $('homeStatus').innerText = 'Game already in progress.';
+  }
+}
+function leaveRoom() {
+  if(peer) peer.destroy();
+  isHost = false;
+  code = '';
+  players = [];
+  conns = [];
+  joinConn = null;
+  round = 0;
+  answers = {};
+  show('home');
+  setStatus('Disconnected');
+}
+function startGame() {}
+function showQuestion(q, r) {}
+function showReveal(d) {}
+function showBoard(p) {}
+function showFinal(p) {}
+function doAgain() {}
+$('createBtn').onclick = createRoom;
+$('joinBtn').onclick = joinRoom;
+$('startBtn').onclick = () => {
+  if(isHost && players.length >= 2) startGame();
+};
+$('leaveBtn').onclick = leaveRoom;
+$('againBtn').onclick = () => {
+  if(isHost) doAgain();
+  else if(joinConn) joinConn.send({t:'again'});
+};
+$('copyBtn').onclick = () => {
+  const link = location.href.split('?')[0] + '?room=' + code;
+  navigator.clipboard.writeText(link).then(() => {
+    $('lobbyStatus').innerText = 'Invite link copied';
+  }).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = link;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    $('lobbyStatus').innerText = 'Invite link copied';
+  });
+};
+if(location.search) {
+  const params = new URLSearchParams(location.search);
+  const r = params.get('room');
+  if(r) $('joinCode').value = r.toUpperCase();
+}
+let myChoice = -1;
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
+  const target = $(id);
+  if (target) target.style.display = 'block';
+  if (id === 'lobby') renderLobby();
+}
+function startGame() {
+  sel = shuffle([...Q]).slice(0, 5);
+  players.forEach(p => p.score = 0);
+  round = 0;
+  nextQ();
+}
+function nextQ() {
+  round++;
+  if (round > 5) {
+    endGame();
+    return;
+  }
+  curQ = sel[round - 1];
+  answers = {};
+  broadcast({ t: 'q', round: round, q: curQ.q, o: curQ.o });
+  showQuestion(curQ, round);
+}
+function showQuestion(qObj, r) {
+  curQ = qObj;
+  round = r;
+  show('game');
+  $('roundLabel').textContent = 'Round ' + r + ' of 5';
+  $('qText').textContent = qObj.q;
+  $('feedback').textContent = '';
+  $('miniBoard').innerHTML = '';
+  answered = false;
+  myChoice = -1;
+  const optsContainer = $('opts');
+  optsContainer.innerHTML = '';
+  const letters = ['A', 'B', 'C', 'D'];
+  qObj.o.forEach((optText, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'opt';
+    btn.textContent = letters[i] + '. ' + optText;
+    btn.onclick = () => answer(i);
+    optsContainer.appendChild(btn);
+  });
+  qStart = Date.now();
+  if (timer) clearInterval(timer);
+  timer = setInterval(() => {
+    const elapsed = (Date.now() - qStart) / 1000;
+    const remaining = Math.max(0, 12 - elapsed);
+    const pct = (remaining / 12) * 100;
+    $('timerBarFill').style.width = pct + '%';
+    $('timerText').textContent = Math.ceil(remaining) + 's';
+    if (remaining <= 0) {
+      clearInterval(timer);
+      $('timerBarFill').style.width = '0%';
+      $('timerText').textContent = 'Time is up!';
+      if (isHost) {
+        doReveal();
+      } else {
+        $('feedback').textContent = 'Waiting for reveal...';
+      }
+    }
+  }, 100);
+}
+function answer(i) {
+  if (answered) return;
+  answered = true;
+  myChoice = i;
+  const elapsed = (Date.now() - qStart) / 1000;
+  if (isHost) {
+    answers['host'] = { choice: i, elapsed: elapsed };
+  } else if (joinConn) {
+    joinConn.send({ t: 'ans', round: round, choice: i, elapsed: elapsed });
+  }
+  const buttons = $('opts').querySelectorAll('button');
+  buttons.forEach((btn, idx) => {
+    if (idx === i) {
+      btn.style.borderColor = '#3b82f6';
+      btn.style.background = '#3b82f6';
+    }
+    btn.disabled = true;
+  });
+}
+function doReveal() {
+  if (timer) clearInterval(timer);
+  players.forEach(p => {
+    const ans = answers[p.id];
+    if (ans && ans.choice === curQ.a) {
+      p.score += 1000 + Math.round(500 * Math.max(0, (12 - ans.elapsed)) / 12);
+    }
+  });
+  broadcast({ t: 'reveal', correct: curQ.a, players: players });
+  showReveal({ correct: curQ.a, players: players });
+  setTimeout(() => {
+    broadcast({ t: 'board', players: players });
+    showBoard(players);
+    setTimeout(() => {
+      nextQ();
+    }, 4000);
+  }, 4000);
+}
+function showReveal(d) {
+  if (timer) clearInterval(timer);
+  const buttons = $('opts').querySelectorAll('button');
+  buttons.forEach((btn, idx) => {
+    btn.disabled = true;
+    if (idx === d.correct) {
+      btn.style.background = '#22c55e';
+      btn.style.color = '#fff';
+    } else if (idx === myChoice && idx !== d.correct) {
+      btn.style.background = '#ef4444';
+      btn.style.color = '#fff';
+    } else {
+      btn.style.opacity = '0.5';
+    }
+  });
+  let fb = 'Correct answer: ' + curQ.o[d.correct];
+  if (myChoice === d.correct) {
+    fb += ' You got it!';
+  }
+  $('feedback').textContent = fb;
+}
+function showBoard(pl) {
+  players = pl;
+  const sorted = [...players].sort((a, b) => b.score - a.score);
+  let html = '<h3>Leaderboard</h3><ul>';
+  sorted.forEach(p => {
+    html += '<li>' + p.name + ': ' + p.score + ' pts</li>';
+  });
+  html += '</ul>';
+  $('miniBoard').innerHTML = html;
+}
+function endGame() {
+  const sorted = [...players].sort((a, b) => b.score - a.score);
+  if (isHost) {
+    broadcast({ t: 'final', players: sorted });
+  }
+  showFinal(sorted);
+}
+function showFinal(pl) {
+  players = pl;
+  const winnerEl = $('winner');
+  if (winnerEl) {
+    winnerEl.textContent = pl[0] ? pl[0].name + ' wins!' : '';
+  }
+  const finalBoard = $('finalBoard');
+  if (finalBoard) {
+    let html = '<ul>';
+    pl.forEach(p => {
+      html += '<li>' + p.name + ': ' + p.score + ' pts</li>';
+    });
+    html += '</ul>';
+    finalBoard.innerHTML = html;
+  }
+  show('final');
+}
+function doAgain() {
+  round = 0;
+  players.forEach(p => p.score = 0);
+  if (isHost) {
+    broadcast({ t: 'again', players: players });
+  }
+  renderLobby();
+  show('lobby');
+}
+</script></body></html>
